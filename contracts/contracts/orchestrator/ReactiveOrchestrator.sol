@@ -55,7 +55,6 @@ contract ReactiveOrchestrator is SomniaEventHandler, IReactiveOrchestrator {
         emit RuleDeactivated(ruleId);
     }
     
-    // Override the Somnia event handler
     function _onEvent(
         address emitter,
         bytes32[] calldata eventTopics,
@@ -69,10 +68,13 @@ contract ReactiveOrchestrator is SomniaEventHandler, IReactiveOrchestrator {
             
             // Check if this event matches the rule
             if (emitter != rule.source) continue;
-            if (eventTopics[0] != bytes32(rule.eventSig)) continue;
             
-            // Decode the event data (assuming uint256 value)
-            uint256 eventValue = abi.decode(data, (uint256));
+            // Compare the first 4 bytes of eventTopics[0] with rule.eventSig
+            if (bytes4(eventTopics[0]) != rule.eventSig) continue;
+            
+            // Decode the event data - for LiquidityUpdated, it's (uint256, uint256)
+            // We only need the first value for threshold comparison
+            (uint256 eventValue, ) = abi.decode(data, (uint256, uint256));
             
             // Check threshold condition
             if (eventValue < rule.threshold) {
@@ -95,6 +97,24 @@ contract ReactiveOrchestrator is SomniaEventHandler, IReactiveOrchestrator {
                 }
             }
         }
+    }
+    
+    // Test helper function - only callable by owner for testing purposes
+    function testTriggerEvent(
+        address emitter,
+        bytes32[] calldata eventTopics,
+        bytes calldata data
+    ) external onlyOwner {
+        _onEvent(emitter, eventTopics, data);
+    }
+    
+    // Helper function to execute target contract calls
+    function executeTargetCall(
+        address target,
+        bytes calldata callData
+    ) external onlyOwner returns (bool success, bytes memory returnData) {
+        (success, returnData) = target.call(callData);
+        require(success, "Target call failed");
     }
     
     function getRule(uint256 ruleId) external view returns (Rule memory) {

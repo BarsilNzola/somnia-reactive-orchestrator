@@ -9,6 +9,7 @@ import type {
   Result,
   Interface,
   EventFragment,
+  AddressLike,
   ContractRunner,
   ContractMethod,
   Listener,
@@ -32,11 +33,13 @@ export interface StakingManagerInterface extends Interface {
       | "pauseStaking"
       | "rebalanceStrategy"
       | "resumeStaking"
+      | "transferOwnership"
       | "updateRewardRate"
   ): FunctionFragment;
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "OwnershipTransferred"
       | "RewardRateUpdated"
       | "StakingPaused"
       | "StakingResumed"
@@ -69,6 +72,10 @@ export interface StakingManagerInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "transferOwnership",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "updateRewardRate",
     values: [BigNumberish]
   ): string;
@@ -99,9 +106,26 @@ export interface StakingManagerInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "transferOwnership",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "updateRewardRate",
     data: BytesLike
   ): Result;
+}
+
+export namespace OwnershipTransferredEvent {
+  export type InputTuple = [previousOwner: AddressLike, newOwner: AddressLike];
+  export type OutputTuple = [previousOwner: string, newOwner: string];
+  export interface OutputObject {
+    previousOwner: string;
+    newOwner: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace RewardRateUpdatedEvent {
@@ -214,6 +238,12 @@ export interface StakingManager extends BaseContract {
 
   resumeStaking: TypedContractMethod<[], [void], "nonpayable">;
 
+  transferOwnership: TypedContractMethod<
+    [newOwner: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
   updateRewardRate: TypedContractMethod<
     [newRate: BigNumberish],
     [void],
@@ -246,9 +276,19 @@ export interface StakingManager extends BaseContract {
     nameOrSignature: "resumeStaking"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
+    nameOrSignature: "transferOwnership"
+  ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "updateRewardRate"
   ): TypedContractMethod<[newRate: BigNumberish], [void], "nonpayable">;
 
+  getEvent(
+    key: "OwnershipTransferred"
+  ): TypedContractEvent<
+    OwnershipTransferredEvent.InputTuple,
+    OwnershipTransferredEvent.OutputTuple,
+    OwnershipTransferredEvent.OutputObject
+  >;
   getEvent(
     key: "RewardRateUpdated"
   ): TypedContractEvent<
@@ -279,6 +319,17 @@ export interface StakingManager extends BaseContract {
   >;
 
   filters: {
+    "OwnershipTransferred(address,address)": TypedContractEvent<
+      OwnershipTransferredEvent.InputTuple,
+      OwnershipTransferredEvent.OutputTuple,
+      OwnershipTransferredEvent.OutputObject
+    >;
+    OwnershipTransferred: TypedContractEvent<
+      OwnershipTransferredEvent.InputTuple,
+      OwnershipTransferredEvent.OutputTuple,
+      OwnershipTransferredEvent.OutputObject
+    >;
+
     "RewardRateUpdated(uint256,uint256)": TypedContractEvent<
       RewardRateUpdatedEvent.InputTuple,
       RewardRateUpdatedEvent.OutputTuple,

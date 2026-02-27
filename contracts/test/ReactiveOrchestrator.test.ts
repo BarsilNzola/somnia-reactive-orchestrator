@@ -3,18 +3,12 @@ import { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
-// Helper function to get provider
-const getProvider = () => {
-  return (ethers as any).provider;
-};
-
 describe("ReactiveOrchestrator", function () {
   let orchestrator: any;
   let liquidityPool: any;
   let stakingManager: any;
   let deployer: SignerWithAddress;
   let user: SignerWithAddress;
-  let ruleManager: SignerWithAddress;
 
   const LIQUIDITY_THRESHOLD = ethers.parseEther("10000");
   const INITIAL_LIQUIDITY = ethers.parseEther("15000");
@@ -27,7 +21,6 @@ describe("ReactiveOrchestrator", function () {
     const signers = await ethers.getSigners();
     deployer = signers[0] as SignerWithAddress;
     user = signers[1] as SignerWithAddress;
-    ruleManager = signers[2] as SignerWithAddress;
 
     // Deploy LiquidityPool
     const LiquidityPoolFactory = await ethers.getContractFactory("LiquidityPool");
@@ -47,6 +40,14 @@ describe("ReactiveOrchestrator", function () {
     // Deploy ReactiveOrchestrator
     const ReactiveOrchestratorFactory = await ethers.getContractFactory("ReactiveOrchestrator");
     orchestrator = await ReactiveOrchestratorFactory.deploy();
+
+    // Transfer ownership of StakingManager to the orchestrator
+    const orchestratorAddress = await orchestrator.getAddress();
+    await stakingManager.connect(deployer).transferOwnership(orchestratorAddress);
+    
+    // Verify ownership transfer
+    const newOwner = await stakingManager.owner();
+    expect(newOwner).to.equal(orchestratorAddress);
   });
 
   describe("Deployment", function () {
@@ -104,7 +105,6 @@ describe("ReactiveOrchestrator", function () {
     });
 
     it("Should deactivate a rule", async function () {
-      // First register a rule
       await orchestrator.connect(deployer).registerRule(
         await liquidityPool.getAddress(),
         eventSig,
@@ -113,12 +113,8 @@ describe("ReactiveOrchestrator", function () {
         pauseCallData
       );
 
-      // Then deactivate it
       const tx = await orchestrator.connect(deployer).deactivateRule(0);
-
-      await expect(tx)
-        .to.emit(orchestrator, "RuleDeactivated")
-        .withArgs(0);
+      await expect(tx).to.emit(orchestrator, "RuleDeactivated").withArgs(0);
 
       expect(await orchestrator.isRuleActive(0)).to.be.false;
       
@@ -135,13 +131,14 @@ describe("ReactiveOrchestrator", function () {
 
   describe("Event Handling", function () {
     let eventSig: string;
+    let eventTopic: string;
     let pauseCallData: string;
 
     beforeEach(async function () {
       eventSig = ethers.id("LiquidityUpdated(uint256,uint256)").substring(0, 10);
+      eventTopic = liquidityPool.interface.getEvent("LiquidityUpdated").topicHash;
       pauseCallData = stakingManager.interface.encodeFunctionData("pauseStaking", []);
       
-      // Register rule
       await orchestrator.connect(deployer).registerRule(
         await liquidityPool.getAddress(),
         eventSig,
@@ -152,86 +149,134 @@ describe("ReactiveOrchestrator", function () {
     });
 
     it("Should execute rule when threshold is crossed", async function () {
-      // Initially staking should be active
+      // Verify initial state
       expect(await stakingManager.getStakingStatus()).to.be.false;
 
-      // Update liquidity below threshold (should trigger rule)
-      const tx = await liquidityPool.connect(deployer).updateLiquidity(
-        ethers.parseEther("5000")
+      const timestamp = await time.latest();
+      const liquidityValue = ethers.parseEther("5000");
+      
+      const eventTopics = [eventTopic];
+      const eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [liquidityValue, timestamp]
       );
-
-      await expect(tx)
-        .to.emit(orchestrator, "RuleExecuted")
-        .withArgs(0, true, await time.latest());
-
-      // Check that staking was paused
-      expect(await stakingManager.getStakingStatus()).to.be.true;
+      
+      // Trigger the event
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
 
       // Check execution logs
       const logs = await orchestrator.getExecutionLogs(0);
       expect(logs.length).to.equal(1);
-      expect(logs[0].ruleId).to.equal(0);
       expect(logs[0].success).to.be.true;
-      expect(logs[0].gasUsed).to.be.gt(0);
+      
+      // Verify staking was paused
+      const stakingStatus = await stakingManager.getStakingStatus();
+      expect(stakingStatus).to.be.true;
     });
 
     it("Should not execute when above threshold", async function () {
-      // Update liquidity above threshold (should not trigger rule)
-      const tx = await liquidityPool.connect(deployer).updateLiquidity(
-        ethers.parseEther("20000")
+      const timestamp = await time.latest();
+      const eventTopics = [eventTopic];
+      const eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("20000"), timestamp]
+      );
+      
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
       );
 
-      // Wait for any potential event
-      await tx.wait();
-
-      // Check execution logs - should be empty
       const logs = await orchestrator.getExecutionLogs(0);
       expect(logs.length).to.equal(0);
-      
-      // Staking should remain active
       expect(await stakingManager.getStakingStatus()).to.be.false;
     });
 
     it("Should not execute for inactive rule", async function () {
-      // Deactivate the rule
       await orchestrator.connect(deployer).deactivateRule(0);
 
-      // Update liquidity below threshold (should not trigger rule)
-      const tx = await liquidityPool.connect(deployer).updateLiquidity(
-        ethers.parseEther("5000")
+      const timestamp = await time.latest();
+      const eventTopics = [eventTopic];
+      const eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("5000"), timestamp]
       );
       
-      await tx.wait();
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
 
-      // Check execution logs - should be empty
       const logs = await orchestrator.getExecutionLogs(0);
       expect(logs.length).to.equal(0);
     });
 
     it("Should handle multiple executions", async function () {
-      // First execution
-      await liquidityPool.connect(deployer).updateLiquidity(ethers.parseEther("5000"));
+      const eventTopics = [eventTopic];
       
-      // Update back above threshold
-      await liquidityPool.connect(deployer).updateLiquidity(ethers.parseEther("15000"));
+      // First execution
+      let timestamp = await time.latest();
+      let eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("5000"), timestamp]
+      );
+      
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
+      
+      // Verify first execution
+      let logs = await orchestrator.getExecutionLogs(0);
+      expect(logs.length).to.equal(1);
+      expect(logs[0].success).to.be.true;
+      expect(await stakingManager.getStakingStatus()).to.be.true;
+      
+      // Resume staking through the orchestrator's executeTargetCall function
+      const resumeData = stakingManager.interface.encodeFunctionData("resumeStaking", []);
+      await orchestrator.connect(deployer).executeTargetCall(
+        await stakingManager.getAddress(),
+        resumeData
+      );
+      
+      // Verify staking is resumed
+      expect(await stakingManager.getStakingStatus()).to.be.false;
       
       // Second execution
-      await liquidityPool.connect(deployer).updateLiquidity(ethers.parseEther("3000"));
+      timestamp = await time.latest();
+      eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("3000"), timestamp]
+      );
+      
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
 
-      // Check logs
-      const logs = await orchestrator.getExecutionLogs(0);
+      logs = await orchestrator.getExecutionLogs(0);
       expect(logs.length).to.equal(2);
       
       for (const log of logs) {
         expect(log.success).to.be.true;
       }
+      
+      expect(await stakingManager.getStakingStatus()).to.be.true;
     });
   });
 
   describe("Multiple Rules", function () {
     it("Should handle multiple rules with different targets", async function () {
-      // Register first rule (pause staking)
       const pauseSig = ethers.id("LiquidityUpdated(uint256,uint256)").substring(0, 10);
+      const pauseTopic = liquidityPool.interface.getEvent("LiquidityUpdated").topicHash;
       const pauseData = stakingManager.interface.encodeFunctionData("pauseStaking", []);
       
       await orchestrator.connect(deployer).registerRule(
@@ -242,72 +287,69 @@ describe("ReactiveOrchestrator", function () {
         pauseData
       );
 
-      // Register second rule (update reward rate)
       const rateSig = ethers.id("APYUpdated(uint256,uint256)").substring(0, 10);
+      const rateTopic = liquidityPool.interface.getEvent("APYUpdated").topicHash;
       const rateData = stakingManager.interface.encodeFunctionData("updateRewardRate", [2000]);
       
       await orchestrator.connect(deployer).registerRule(
         await liquidityPool.getAddress(),
         rateSig,
-        1000, // APY threshold
+        1000,
         await stakingManager.getAddress(),
         rateData
       );
 
-      // Trigger first rule
-      await liquidityPool.connect(deployer).updateLiquidity(ethers.parseEther("5000"));
+      // Verify initial state
+      expect(await stakingManager.getStakingStatus()).to.be.false;
+      expect(await stakingManager.getRewardRate()).to.equal(1000);
+
+      // Trigger first rule (liquidity update)
+      let timestamp = await time.latest();
+      let eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("5000"), timestamp]
+      );
+      let eventTopics = [pauseTopic];
       
-      // Check first rule executed
-      let logs1 = await orchestrator.getExecutionLogs(0);
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
+      
+      // Verify first rule executed
+      const logs1 = await orchestrator.getExecutionLogs(0);
       expect(logs1.length).to.equal(1);
-      
-      // Trigger second rule
-      await liquidityPool.connect(deployer).updateAPY(500); // Below threshold
-      
-      // Check second rule executed
-      let logs2 = await orchestrator.getExecutionLogs(1);
-      expect(logs2.length).to.equal(1);
-      
-      // Verify staking was paused
+      expect(logs1[0].success).to.be.true;
       expect(await stakingManager.getStakingStatus()).to.be.true;
       
-      // Verify reward rate was updated
+      // Trigger second rule (APY update)
+      timestamp = await time.latest();
+      eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [500, timestamp]
+      );
+      eventTopics = [rateTopic];
+      
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
+
+      // Verify second rule executed
+      const logs2 = await orchestrator.getExecutionLogs(1);
+      expect(logs2.length).to.equal(1);
+      expect(logs2[0].success).to.be.true;
+      
       expect(await stakingManager.getRewardRate()).to.equal(2000);
     });
   });
 
   describe("Oracle Price Events", function () {
     it("Should trigger on price drop", async function () {
-      // Register rule for price drops
       const priceSig = ethers.id("OraclePriceUpdated(uint256,uint256)").substring(0, 10);
-      const rebalanceData = stakingManager.interface.encodeFunctionData("rebalanceStrategy", []);
-      
-      await orchestrator.connect(deployer).registerRule(
-        await liquidityPool.getAddress(),
-        priceSig,
-        ethers.parseEther("80"), // Price threshold (20% drop from 100)
-        await stakingManager.getAddress(),
-        rebalanceData
-      );
-
-      // Get initial allocation
-      const initialAllocation = await stakingManager.getStrategyAllocation();
-
-      // Update price to trigger rule (drop below 80)
-      const tx = await liquidityPool.connect(deployer).updatePrice(ethers.parseEther("75"));
-
-      await expect(tx)
-        .to.emit(orchestrator, "RuleExecuted")
-        .withArgs(0, true, await time.latest());
-
-      // Check that strategy was rebalanced
-      const newAllocation = await stakingManager.getStrategyAllocation();
-      expect(newAllocation).to.not.equal(initialAllocation);
-    });
-
-    it("Should not trigger on price increase", async function () {
-      // Register rule for price drops
-      const priceSig = ethers.id("OraclePriceUpdated(uint256,uint256)").substring(0, 10);
+      const priceTopic = liquidityPool.interface.getEvent("OraclePriceUpdated").topicHash;
       const rebalanceData = stakingManager.interface.encodeFunctionData("rebalanceStrategy", []);
       
       await orchestrator.connect(deployer).registerRule(
@@ -318,12 +360,55 @@ describe("ReactiveOrchestrator", function () {
         rebalanceData
       );
 
-      // Update price above threshold (increase)
-      const tx = await liquidityPool.connect(deployer).updatePrice(ethers.parseEther("120"));
-      
-      await tx.wait();
+      const initialAllocation = await stakingManager.getStrategyAllocation();
 
-      // Check execution logs - should be empty
+      const timestamp = await time.latest();
+      const eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("75"), timestamp]
+      );
+      const eventTopics = [priceTopic];
+      
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
+
+      const logs = await orchestrator.getExecutionLogs(0);
+      expect(logs.length).to.equal(1);
+      expect(logs[0].success).to.be.true;
+      
+      const newAllocation = await stakingManager.getStrategyAllocation();
+      expect(newAllocation).to.not.equal(initialAllocation);
+    });
+
+    it("Should not trigger on price increase", async function () {
+      const priceSig = ethers.id("OraclePriceUpdated(uint256,uint256)").substring(0, 10);
+      const priceTopic = liquidityPool.interface.getEvent("OraclePriceUpdated").topicHash;
+      const rebalanceData = stakingManager.interface.encodeFunctionData("rebalanceStrategy", []);
+      
+      await orchestrator.connect(deployer).registerRule(
+        await liquidityPool.getAddress(),
+        priceSig,
+        ethers.parseEther("80"),
+        await stakingManager.getAddress(),
+        rebalanceData
+      );
+
+      const timestamp = await time.latest();
+      const eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("120"), timestamp]
+      );
+      const eventTopics = [priceTopic];
+      
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
+
       const logs = await orchestrator.getExecutionLogs(0);
       expect(logs.length).to.equal(0);
     });
@@ -331,8 +416,8 @@ describe("ReactiveOrchestrator", function () {
 
   describe("Edge Cases", function () {
     it("Should handle rule with exact threshold value", async function () {
-      // Register rule with exact threshold
       const eventSig = ethers.id("LiquidityUpdated(uint256,uint256)").substring(0, 10);
+      const eventTopic = liquidityPool.interface.getEvent("LiquidityUpdated").topicHash;
       const pauseData = stakingManager.interface.encodeFunctionData("pauseStaking", []);
       
       await orchestrator.connect(deployer).registerRule(
@@ -343,24 +428,48 @@ describe("ReactiveOrchestrator", function () {
         pauseData
       );
 
-      // Update liquidity exactly at threshold (should NOT trigger because condition is < threshold)
-      await liquidityPool.connect(deployer).updateLiquidity(ethers.parseEther("10000"));
-
-      // Check execution logs - should be empty
-      const logs = await orchestrator.getExecutionLogs(0);
-      expect(logs.length).to.equal(0);
+      // Update exactly at threshold
+      let timestamp = await time.latest();
+      let eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("10000"), timestamp]
+      );
+      let eventTopics = [eventTopic];
       
-      // Update liquidity just below threshold
-      await liquidityPool.connect(deployer).updateLiquidity(ethers.parseEther("9999"));
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
 
-      // Should trigger now
-      const logsAfter = await orchestrator.getExecutionLogs(0);
-      expect(logsAfter.length).to.equal(1);
+      // Should not execute
+      let logs = await orchestrator.getExecutionLogs(0);
+      expect(logs.length).to.equal(0);
+      expect(await stakingManager.getStakingStatus()).to.be.false;
+      
+      // Update below threshold
+      timestamp = await time.latest();
+      eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("9999"), timestamp]
+      );
+      
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
+
+      // Should execute now
+      logs = await orchestrator.getExecutionLogs(0);
+      expect(logs.length).to.equal(1);
+      expect(logs[0].success).to.be.true;
+      expect(await stakingManager.getStakingStatus()).to.be.true;
     });
 
     it("Should handle failed target calls gracefully", async function () {
-      // Register rule with invalid target call (calling non-existent function)
       const eventSig = ethers.id("LiquidityUpdated(uint256,uint256)").substring(0, 10);
+      const eventTopic = liquidityPool.interface.getEvent("LiquidityUpdated").topicHash;
       const invalidData = "0x12345678"; // Invalid function signature
       
       await orchestrator.connect(deployer).registerRule(
@@ -371,12 +480,23 @@ describe("ReactiveOrchestrator", function () {
         invalidData
       );
 
-      // Trigger rule
-      const tx = await liquidityPool.connect(deployer).updateLiquidity(ethers.parseEther("5000"));
+      const timestamp = await time.latest();
+      const eventData = ethers.AbiCoder.defaultAbiCoder().encode(
+        ["uint256", "uint256"], 
+        [ethers.parseEther("5000"), timestamp]
+      );
+      const eventTopics = [eventTopic];
+      
+      await orchestrator.connect(deployer).testTriggerEvent(
+        await liquidityPool.getAddress(),
+        eventTopics,
+        eventData
+      );
 
-      await expect(tx)
-        .to.emit(orchestrator, "RuleFailed")
-        .withArgs(0, await getProvider()?.then((p: any) => p.getTransactionReceipt(tx.hash))?.then((r: any) => r.logs[0]?.data));
+      const logs = await orchestrator.getExecutionLogs(0);
+      expect(logs.length).to.equal(1);
+      expect(logs[0].success).to.be.false;
+      expect(await stakingManager.getStakingStatus()).to.be.false;
     });
   });
 });

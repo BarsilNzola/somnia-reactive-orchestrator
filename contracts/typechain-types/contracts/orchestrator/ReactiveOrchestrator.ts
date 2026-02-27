@@ -79,6 +79,7 @@ export interface ReactiveOrchestratorInterface extends Interface {
   getFunction(
     nameOrSignature:
       | "deactivateRule"
+      | "executeTargetCall"
       | "getExecutionLogs"
       | "getNextRuleId"
       | "getRule"
@@ -87,6 +88,7 @@ export interface ReactiveOrchestratorInterface extends Interface {
       | "owner"
       | "registerRule"
       | "supportsInterface"
+      | "testTriggerEvent"
   ): FunctionFragment;
 
   getEvent(
@@ -100,6 +102,10 @@ export interface ReactiveOrchestratorInterface extends Interface {
   encodeFunctionData(
     functionFragment: "deactivateRule",
     values: [BigNumberish]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "executeTargetCall",
+    values: [AddressLike, BytesLike]
   ): string;
   encodeFunctionData(
     functionFragment: "getExecutionLogs",
@@ -130,9 +136,17 @@ export interface ReactiveOrchestratorInterface extends Interface {
     functionFragment: "supportsInterface",
     values: [BytesLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "testTriggerEvent",
+    values: [AddressLike, BytesLike[], BytesLike]
+  ): string;
 
   decodeFunctionResult(
     functionFragment: "deactivateRule",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "executeTargetCall",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
@@ -156,6 +170,10 @@ export interface ReactiveOrchestratorInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "supportsInterface",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "testTriggerEvent",
     data: BytesLike
   ): Result;
 }
@@ -274,6 +292,12 @@ export interface ReactiveOrchestrator extends BaseContract {
     "nonpayable"
   >;
 
+  executeTargetCall: TypedContractMethod<
+    [target: AddressLike, callData: BytesLike],
+    [[boolean, string] & { success: boolean; returnData: string }],
+    "nonpayable"
+  >;
+
   getExecutionLogs: TypedContractMethod<
     [ruleId: BigNumberish],
     [IReactiveOrchestrator.ExecutionLogStructOutput[]],
@@ -316,6 +340,12 @@ export interface ReactiveOrchestrator extends BaseContract {
     "view"
   >;
 
+  testTriggerEvent: TypedContractMethod<
+    [emitter: AddressLike, eventTopics: BytesLike[], data: BytesLike],
+    [void],
+    "nonpayable"
+  >;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
@@ -323,6 +353,13 @@ export interface ReactiveOrchestrator extends BaseContract {
   getFunction(
     nameOrSignature: "deactivateRule"
   ): TypedContractMethod<[ruleId: BigNumberish], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "executeTargetCall"
+  ): TypedContractMethod<
+    [target: AddressLike, callData: BytesLike],
+    [[boolean, string] & { success: boolean; returnData: string }],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "getExecutionLogs"
   ): TypedContractMethod<
@@ -369,6 +406,13 @@ export interface ReactiveOrchestrator extends BaseContract {
   getFunction(
     nameOrSignature: "supportsInterface"
   ): TypedContractMethod<[interfaceId: BytesLike], [boolean], "view">;
+  getFunction(
+    nameOrSignature: "testTriggerEvent"
+  ): TypedContractMethod<
+    [emitter: AddressLike, eventTopics: BytesLike[], data: BytesLike],
+    [void],
+    "nonpayable"
+  >;
 
   getEvent(
     key: "RuleDeactivated"

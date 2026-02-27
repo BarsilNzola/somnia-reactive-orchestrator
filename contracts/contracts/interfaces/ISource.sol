@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.30;
 
 interface ISource {
     event LiquidityUpdated(uint256 indexed newLiquidity, uint256 timestamp);

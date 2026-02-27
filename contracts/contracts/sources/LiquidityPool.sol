@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.30;
 
 import "../interfaces/ISource.sol";
 
@@ -9,11 +9,6 @@ contract LiquidityPool is ISource {
     uint256 private price;
     
     address public owner;
-    
-    event LiquidityUpdated(uint256 indexed newLiquidity, uint256 timestamp);
-    event APYUpdated(uint256 indexed newAPY, uint256 timestamp);
-    event OraclePriceUpdated(uint256 indexed newPrice, uint256 timestamp);
-    event ThresholdCrossed(string indexed metric, uint256 value, uint256 threshold);
     
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner");

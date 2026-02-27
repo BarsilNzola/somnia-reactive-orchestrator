@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.30;
 
 import "../interfaces/ITarget.sol";
 
@@ -9,11 +9,6 @@ contract StakingManager is ITarget {
     uint256 private strategyAllocation;
     
     address public owner;
-    
-    event StakingPaused(uint256 timestamp);
-    event StakingResumed(uint256 timestamp);
-    event RewardRateUpdated(uint256 indexed newRate, uint256 timestamp);
-    event StrategyRebalanced(uint256 indexed newAllocation, uint256 timestamp);
     
     modifier onlyOwner() {
         require(msg.sender == owner, "Only owner");

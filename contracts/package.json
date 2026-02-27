@@ -39,6 +39,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    
+    "@somnia-chain/reactivity": "^0.1.10",
+    "@somnia-chain/reactivity-contracts": "^0.1.6"
   }
 }

@@ -1,0 +1,205 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "LiquidityPool",
+  "sourceName": "contracts/sources/LiquidityPool.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "initialLiquidity",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "initialAPY",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "initialPrice",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "constructor"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "newAPY",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "APYUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "newLiquidity",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "LiquidityUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "newPrice",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "timestamp",
+          "type": "uint256"
+        }
+      ],
+      "name": "OraclePriceUpdated",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "metric",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "value",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "threshold",
+          "type": "uint256"
+        }
+      ],
+      "name": "ThresholdCrossed",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "getAPY",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getLiquidity",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getPrice",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "owner",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "newAPY",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateAPY",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "newLiquidity",
+          "type": "uint256"
+        }
+      ],
+      "name": "updateLiquidity",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "newPrice",
+          "type": "uint256"
+        }
+      ],
+      "name": "updatePrice",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600f57600080fd5b50604051610496380380610496833981016040819052602c91604e565b600380546001600160a01b03191633179055600092909255600155600255607b565b600080600060608486031215606257600080fd5b5050815160208301516040909301519094929350919050565b61040c8061008a6000396000f3fe608060405234801561001057600080fd5b506004361061007d5760003560e01c806398d5fdca1161005b57806398d5fdca146100d9578063ced09112146100e1578063d2cbf7ad146100f4578063fae728cd146100fc57600080fd5b80630910a510146100825780638d6cc56d146100995780638da5cb5b146100ae575b600080fd5b6000545b6040519081526020015b60405180910390f35b6100ac6100a736600461034c565b61010f565b005b6003546100c1906001600160a01b031681565b6040516001600160a01b039091168152602001610090565b600254610086565b6100ac6100ef36600461034c565b610212565b600154610086565b6100ac61010a36600461034c565b6102eb565b6003546001600160a01b031633146101425760405162461bcd60e51b815260040161013990610365565b60405180910390fd5b600280549082905560405142815282907f7bb53a16f0a956ec70e3aba1c9dcdd953de741292a17f213b0d38d24d6f476ba9060200160405180910390a2606461018c826050610389565b61019691906103b4565b82101561020e5760405169070726963655f64726f760b41b8152600a016040519081900390207fc04bf0056a46a22db510e6933e949da99a090801d9b4c0c25bee98714fcc432c8360646101eb856050610389565b6101f591906103b4565b6040805192835260208301919091520160405180910390a25b5050565b6003546001600160a01b0316331461023c5760405162461bcd60e51b815260040161013990610365565b600081905560405142815281907ff1f86f8f9cc2ef15e270943749629a1cda43b82d5f9eeaafd4e2620feb6a5fe49060200160405180910390a269021e19e0c9bab24000008110156102e857604051686c697175696469747960b81b81526009016040805191829003822083835269021e19e0c9bab24000006020840152917fc04bf0056a46a22db510e6933e949da99a090801d9b4c0c25bee98714fcc432c91015b60405180910390a25b50565b6003546001600160a01b031633146103155760405162461bcd60e51b815260040161013990610365565b600181905560405142815281907f787a1fca55641ce34a438271930bbb9401df20db2b4f510d4f252227d85df43d906020016102df565b60006020828403121561035e57600080fd5b5035919050565b6020808252600a908201526927b7363c9037bbb732b960b11b604082015260600190565b80820281158282048414176103ae57634e487b7160e01b600052601160045260246000fd5b92915050565b6000826103d157634e487b7160e01b600052601260045260246000fd5b50049056fea2646970667358221220d050e637f38ac276fafe071cf1da5fbe2cb48afc9fa5cfb3a6408bcd8cba6ff664736f6c634300081e0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061007d5760003560e01c806398d5fdca1161005b57806398d5fdca146100d9578063ced09112146100e1578063d2cbf7ad146100f4578063fae728cd146100fc57600080fd5b80630910a510146100825780638d6cc56d146100995780638da5cb5b146100ae575b600080fd5b6000545b6040519081526020015b60405180910390f35b6100ac6100a736600461034c565b61010f565b005b6003546100c1906001600160a01b031681565b6040516001600160a01b039091168152602001610090565b600254610086565b6100ac6100ef36600461034c565b610212565b600154610086565b6100ac61010a36600461034c565b6102eb565b6003546001600160a01b031633146101425760405162461bcd60e51b815260040161013990610365565b60405180910390fd5b600280549082905560405142815282907f7bb53a16f0a956ec70e3aba1c9dcdd953de741292a17f213b0d38d24d6f476ba9060200160405180910390a2606461018c826050610389565b61019691906103b4565b82101561020e5760405169070726963655f64726f760b41b8152600a016040519081900390207fc04bf0056a46a22db510e6933e949da99a090801d9b4c0c25bee98714fcc432c8360646101eb856050610389565b6101f591906103b4565b6040805192835260208301919091520160405180910390a25b5050565b6003546001600160a01b0316331461023c5760405162461bcd60e51b815260040161013990610365565b600081905560405142815281907ff1f86f8f9cc2ef15e270943749629a1cda43b82d5f9eeaafd4e2620feb6a5fe49060200160405180910390a269021e19e0c9bab24000008110156102e857604051686c697175696469747960b81b81526009016040805191829003822083835269021e19e0c9bab24000006020840152917fc04bf0056a46a22db510e6933e949da99a090801d9b4c0c25bee98714fcc432c91015b60405180910390a25b50565b6003546001600160a01b031633146103155760405162461bcd60e51b815260040161013990610365565b600181905560405142815281907f787a1fca55641ce34a438271930bbb9401df20db2b4f510d4f252227d85df43d906020016102df565b60006020828403121561035e57600080fd5b5035919050565b6020808252600a908201526927b7363c9037bbb732b960b11b604082015260600190565b80820281158282048414176103ae57634e487b7160e01b600052601160045260246000fd5b92915050565b6000826103d157634e487b7160e01b600052601260045260246000fd5b50049056fea2646970667358221220d050e637f38ac276fafe071cf1da5fbe2cb48afc9fa5cfb3a6408bcd8cba6ff664736f6c634300081e0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

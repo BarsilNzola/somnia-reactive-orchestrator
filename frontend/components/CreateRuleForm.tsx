@@ -33,26 +33,51 @@ export default function CreateRuleForm({ onSubmit, loading }: CreateRuleFormProp
       `function ${selectedAction}(${action.params.map(p => 'uint256').join(',')}) external`
     ]);
 
-    const params = action.params.map(p => actionParams[p] || '0');
-    return stakingManagerInterface.encodeFunctionData(selectedAction, params.map(p => BigInt(p)));
+    const params = action.params.map(p => {
+      const value = actionParams[p];
+      return value ? BigInt(value) : 0n;
+    });
+    
+    return stakingManagerInterface.encodeFunctionData(selectedAction, params);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    await onSubmit({
-      source: contractAddresses.liquidityPool,
-      eventSig: getEventSig(selectedEvent),
-      threshold: ethers.parseEther(threshold),
-      target: contractAddresses.stakingManager,
-      callData: getActionData()
-    });
+    if (!selectedEvent || !selectedAction || !threshold) {
+      alert('Please fill in all required fields');
+      return;
+    }
 
-    setSelectedEvent('');
-    setSelectedAction('');
-    setThreshold('');
-    setActionParams({});
+    try {
+      // Convert threshold to the appropriate format
+      let thresholdValue: bigint;
+      if (selectedEvent === 'APYUpdated') {
+        thresholdValue = BigInt(threshold);
+      } else {
+        thresholdValue = ethers.parseEther(threshold);
+      }
+
+      await onSubmit({
+        source: contractAddresses.liquidityPool,
+        eventSig: getEventSig(selectedEvent),
+        threshold: thresholdValue,
+        target: contractAddresses.stakingManager,
+        callData: getActionData()
+      });
+
+      // Reset form
+      setSelectedEvent('');
+      setSelectedAction('');
+      setThreshold('');
+      setActionParams({});
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('Error creating rule. Check console for details.');
+    }
   };
+
+  const isFormValid = selectedEvent && selectedAction && threshold;
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -65,7 +90,10 @@ export default function CreateRuleForm({ onSubmit, loading }: CreateRuleFormProp
           </label>
           <select
             value={selectedEvent}
-            onChange={(e) => setSelectedEvent(e.target.value)}
+            onChange={(e) => {
+              setSelectedEvent(e.target.value);
+              setThreshold(''); // Reset threshold when event changes
+            }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
@@ -88,14 +116,20 @@ export default function CreateRuleForm({ onSubmit, loading }: CreateRuleFormProp
               value={threshold}
               onChange={(e) => setThreshold(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder={selectedEvent === 'APYUpdated' ? 'Enter APY value' : 'Enter SOM amount'}
-              step="any"
+              placeholder={selectedEvent === 'APYUpdated' ? 'Enter APY value (e.g., 300)' : 'Enter SOM amount (e.g., 10000)'}
+              step={selectedEvent === 'APYUpdated' ? '1' : '0.000000000000000001'}
+              min="0"
               required
             />
             <span className="absolute right-3 top-2 text-sm text-gray-500">
               {selectedEvent === 'APYUpdated' ? '' : 'SOM'}
             </span>
           </div>
+          {selectedEvent !== 'APYUpdated' && (
+            <p className="mt-1 text-xs text-gray-500">
+              Enter amount in SOM (e.g., 10000 for 10,000 SOM)
+            </p>
+          )}
         </div>
 
         <div>
@@ -104,7 +138,10 @@ export default function CreateRuleForm({ onSubmit, loading }: CreateRuleFormProp
           </label>
           <select
             value={selectedAction}
-            onChange={(e) => setSelectedAction(e.target.value)}
+            onChange={(e) => {
+              setSelectedAction(e.target.value);
+              setActionParams({});
+            }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             required
           >
@@ -127,6 +164,9 @@ export default function CreateRuleForm({ onSubmit, loading }: CreateRuleFormProp
               value={actionParams[param] || ''}
               onChange={(e) => setActionParams({ ...actionParams, [param]: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={`Enter ${param} value`}
+              step="1"
+              min="0"
               required
             />
           </div>
@@ -134,13 +174,19 @@ export default function CreateRuleForm({ onSubmit, loading }: CreateRuleFormProp
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !isFormValid}
           className={`w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors ${
-            loading ? 'opacity-50 cursor-not-allowed' : ''
+            loading || !isFormValid ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
           {loading ? 'Creating...' : 'Create Rule'}
         </button>
+
+        {!isFormValid && (
+          <p className="text-sm text-red-600 text-center">
+            Please fill in all required fields
+          </p>
+        )}
       </div>
     </form>
   );

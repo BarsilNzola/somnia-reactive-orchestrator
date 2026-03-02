@@ -32,9 +32,9 @@ const config: HardhatUserConfig = {
       gasPrice: "auto"
     },
     somniaTestnet: {
-      url: process.env.SOMNIA_TESTNET_RPC_URL || "https://testnet.rpc.somnia.network",
+      url: process.env.SOMNIA_TESTNET_RPC_URL || "https://dream-rpc.somnia.network",
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
-      chainId: 50342,
+      chainId: 50312,
       gasPrice: "auto"
     }
   },

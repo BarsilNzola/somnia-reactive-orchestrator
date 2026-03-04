@@ -1,32 +1,35 @@
 {
-    "name": "somnia-reactive-orchestrator-frontend",
-    "version": "1.0.0",
-    "private": true,
-    "scripts": {
-      "dev": "next dev",
-      "build": "next build",
-      "start": "next start",
-      "lint": "next lint"
-    },
-    "dependencies": {
-      "next": "14.0.4",
-      "react": "18.2.0",
-      "react-dom": "18.2.0",
-      "ethers": "^6.9.0",
-      "viem": "^2.38.0",
-      "wagmi": "^2.12.0",
-      "@wagmi/core": "^2.13.0",
-      "@wagmi/connectors": "^4.3.0",
-      "@tanstack/react-query": "^5.17.0",
-      "@somnia-chain/reactivity": "^0.1.10"
-    },
-    "devDependencies": {
-      "@types/node": "^20.10.5",
-      "@types/react": "^18.2.45",
-      "@types/react-dom": "^18.2.18",
-      "typescript": "^5.3.3",
-      "tailwindcss": "^3.4.0",
-      "autoprefixer": "^10.4.16",
-      "postcss": "^8.4.32"
-    }
+  "name": "somnia-reactive-orchestrator-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "next": "14.0.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "ethers": "^6.9.0",
+    "viem": "2.37.8",
+    "wagmi": "^2.12.0",
+    "@wagmi/core": "^2.13.0",
+    "@wagmi/connectors": "^4.3.0",
+    "@tanstack/react-query": "^5.17.0",
+    "@somnia-chain/reactivity": "^0.1.10"
+  },
+  "overrides": {
+    "viem": "2.37.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "typescript": "^5.3.3",
+    "tailwindcss": "^3.4.0",
+    "autoprefixer": "^10.4.16",
+    "postcss": "^8.4.32"
   }
+}

@@ -26,12 +26,15 @@ import type {
 export interface StakingManagerInterface extends Interface {
   getFunction(
     nameOrSignature:
+      | "addAllowedCaller"
+      | "allowedCallers"
       | "getRewardRate"
       | "getStakingStatus"
       | "getStrategyAllocation"
       | "owner"
       | "pauseStaking"
       | "rebalanceStrategy"
+      | "removeAllowedCaller"
       | "resumeStaking"
       | "transferOwnership"
       | "updateRewardRate"
@@ -39,6 +42,8 @@ export interface StakingManagerInterface extends Interface {
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "CallerAdded"
+      | "CallerRemoved"
       | "OwnershipTransferred"
       | "RewardRateUpdated"
       | "StakingPaused"
@@ -46,6 +51,14 @@ export interface StakingManagerInterface extends Interface {
       | "StrategyRebalanced"
   ): EventFragment;
 
+  encodeFunctionData(
+    functionFragment: "addAllowedCaller",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "allowedCallers",
+    values: [AddressLike]
+  ): string;
   encodeFunctionData(
     functionFragment: "getRewardRate",
     values?: undefined
@@ -68,6 +81,10 @@ export interface StakingManagerInterface extends Interface {
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "removeAllowedCaller",
+    values: [AddressLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "resumeStaking",
     values?: undefined
   ): string;
@@ -80,6 +97,14 @@ export interface StakingManagerInterface extends Interface {
     values: [BigNumberish]
   ): string;
 
+  decodeFunctionResult(
+    functionFragment: "addAllowedCaller",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "allowedCallers",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(
     functionFragment: "getRewardRate",
     data: BytesLike
@@ -102,6 +127,10 @@ export interface StakingManagerInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(
+    functionFragment: "removeAllowedCaller",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
     functionFragment: "resumeStaking",
     data: BytesLike
   ): Result;
@@ -113,6 +142,30 @@ export interface StakingManagerInterface extends Interface {
     functionFragment: "updateRewardRate",
     data: BytesLike
   ): Result;
+}
+
+export namespace CallerAddedEvent {
+  export type InputTuple = [caller: AddressLike];
+  export type OutputTuple = [caller: string];
+  export interface OutputObject {
+    caller: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace CallerRemovedEvent {
+  export type InputTuple = [caller: AddressLike];
+  export type OutputTuple = [caller: string];
+  export interface OutputObject {
+    caller: string;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace OwnershipTransferredEvent {
@@ -224,6 +277,14 @@ export interface StakingManager extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
+  addAllowedCaller: TypedContractMethod<
+    [caller: AddressLike],
+    [void],
+    "nonpayable"
+  >;
+
+  allowedCallers: TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
+
   getRewardRate: TypedContractMethod<[], [bigint], "view">;
 
   getStakingStatus: TypedContractMethod<[], [boolean], "view">;
@@ -235,6 +296,12 @@ export interface StakingManager extends BaseContract {
   pauseStaking: TypedContractMethod<[], [void], "nonpayable">;
 
   rebalanceStrategy: TypedContractMethod<[], [void], "nonpayable">;
+
+  removeAllowedCaller: TypedContractMethod<
+    [caller: AddressLike],
+    [void],
+    "nonpayable"
+  >;
 
   resumeStaking: TypedContractMethod<[], [void], "nonpayable">;
 
@@ -255,6 +322,12 @@ export interface StakingManager extends BaseContract {
   ): T;
 
   getFunction(
+    nameOrSignature: "addAllowedCaller"
+  ): TypedContractMethod<[caller: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "allowedCallers"
+  ): TypedContractMethod<[arg0: AddressLike], [boolean], "view">;
+  getFunction(
     nameOrSignature: "getRewardRate"
   ): TypedContractMethod<[], [bigint], "view">;
   getFunction(
@@ -273,6 +346,9 @@ export interface StakingManager extends BaseContract {
     nameOrSignature: "rebalanceStrategy"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
+    nameOrSignature: "removeAllowedCaller"
+  ): TypedContractMethod<[caller: AddressLike], [void], "nonpayable">;
+  getFunction(
     nameOrSignature: "resumeStaking"
   ): TypedContractMethod<[], [void], "nonpayable">;
   getFunction(
@@ -282,6 +358,20 @@ export interface StakingManager extends BaseContract {
     nameOrSignature: "updateRewardRate"
   ): TypedContractMethod<[newRate: BigNumberish], [void], "nonpayable">;
 
+  getEvent(
+    key: "CallerAdded"
+  ): TypedContractEvent<
+    CallerAddedEvent.InputTuple,
+    CallerAddedEvent.OutputTuple,
+    CallerAddedEvent.OutputObject
+  >;
+  getEvent(
+    key: "CallerRemoved"
+  ): TypedContractEvent<
+    CallerRemovedEvent.InputTuple,
+    CallerRemovedEvent.OutputTuple,
+    CallerRemovedEvent.OutputObject
+  >;
   getEvent(
     key: "OwnershipTransferred"
   ): TypedContractEvent<
@@ -319,6 +409,28 @@ export interface StakingManager extends BaseContract {
   >;
 
   filters: {
+    "CallerAdded(address)": TypedContractEvent<
+      CallerAddedEvent.InputTuple,
+      CallerAddedEvent.OutputTuple,
+      CallerAddedEvent.OutputObject
+    >;
+    CallerAdded: TypedContractEvent<
+      CallerAddedEvent.InputTuple,
+      CallerAddedEvent.OutputTuple,
+      CallerAddedEvent.OutputObject
+    >;
+
+    "CallerRemoved(address)": TypedContractEvent<
+      CallerRemovedEvent.InputTuple,
+      CallerRemovedEvent.OutputTuple,
+      CallerRemovedEvent.OutputObject
+    >;
+    CallerRemoved: TypedContractEvent<
+      CallerRemovedEvent.InputTuple,
+      CallerRemovedEvent.OutputTuple,
+      CallerRemovedEvent.OutputObject
+    >;
+
     "OwnershipTransferred(address,address)": TypedContractEvent<
       OwnershipTransferredEvent.InputTuple,
       OwnershipTransferredEvent.OutputTuple,

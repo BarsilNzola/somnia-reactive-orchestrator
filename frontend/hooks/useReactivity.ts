@@ -23,13 +23,13 @@ export function useReactivity() {
   const [sourceState, setSourceState] = useState<SourceState>({
     liquidity: '0',
     apy: 0,
-    price: '0'
+    price: '0',
   });
-  
+
   const [targetState, setTargetState] = useState<TargetState>({
     paused: false,
     rewardRate: 0,
-    allocation: 0
+    allocation: 0,
   });
 
   const [sdk, setSdk] = useState<SDK | null>(null);
@@ -40,53 +40,49 @@ export function useReactivity() {
       id: SOMNIA_TESTNET_CONFIG.chainId,
       name: SOMNIA_TESTNET_CONFIG.name,
       network: 'somnia-testnet',
-      nativeCurrency: {
-        decimals: 18,
-        name: 'SOM',
-        symbol: 'SOM'
-      },
+      nativeCurrency: { decimals: 18, name: 'SOM', symbol: 'SOM' },
       rpcUrls: {
-        default: { http: [SOMNIA_TESTNET_CONFIG.rpcUrl] }
-      }
+        default: { http: [SOMNIA_TESTNET_CONFIG.rpcUrl] },
+      },
     });
 
     const publicClient = createPublicClient({
       chain: somniaChain,
-      transport: http()
+      transport: http(),
     });
 
-    const sdkInstance = new SDK({
-      public: publicClient
-    });
-
+    const sdkInstance = new SDK({ public: publicClient });
     setSdk(sdkInstance);
 
     return () => {
-      subscriptions.forEach(sub => sub.unsubscribe());
+      subscriptions.forEach((sub) => sub.unsubscribe());
     };
   }, []);
 
-  const subscribeToEvents = (contractAddress: Address, events: string[], callback: (data: any) => void) => {
+  const subscribeToEvents = (
+    contractAddress: Address,
+    events: string[],
+    callback: (data: any) => void
+  ) => {
     if (!sdk) return null;
 
     const initParams: WebsocketSubscriptionInitParams = {
-      ethCalls: events.map(event => ({
+      ethCalls: events.map((event) => ({
         to: contractAddress,
-        data: event as `0x${string}`
+        data: event as `0x${string}`,
       })),
-      onData: callback
+      onData: callback,
     };
 
     const subscription = sdk.subscribe(initParams);
-    
-    // Handle both sync and async subscriptions
+
     if (subscription instanceof Promise) {
-      subscription.then(sub => {
-        setSubscriptions(prev => [...prev, sub as Subscription]);
+      subscription.then((sub) => {
+        setSubscriptions((prev) => [...prev, sub as Subscription]);
       });
       return subscription;
     } else {
-      setSubscriptions(prev => [...prev, subscription as Subscription]);
+      setSubscriptions((prev) => [...prev, subscription as Subscription]);
       return subscription;
     }
   };
@@ -109,7 +105,7 @@ export function useReactivity() {
       maxFeePerGas: options.maxFeePerGas,
       gasLimit: options.gasLimit,
       isGuaranteed: options.isGuaranteed,
-      isCoalesced: options.isCoalesced
+      isCoalesced: options.isCoalesced,
     };
 
     return await sdk.createSoliditySubscription(subscriptionData);
@@ -122,6 +118,6 @@ export function useReactivity() {
     setTargetState,
     subscribeToEvents,
     createSoliditySubscription,
-    isInitialized: sdk !== null
+    isInitialized: sdk !== null,
   };
 }

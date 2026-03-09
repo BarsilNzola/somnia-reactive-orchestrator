@@ -21,7 +21,6 @@ interface ExecutionLog {
   gasUsed: bigint;
 }
 
-// Define contract types
 interface OrchestratorContract extends ethers.BaseContract {
   getNextRuleId(): Promise<bigint>;
   getRule(ruleId: number): Promise<{
@@ -63,18 +62,16 @@ interface Contracts {
 }
 
 export function useOrchestrator() {
-  const { contracts: rawContracts, isConnected, address } = useContracts();
+  const { contracts: rawContracts, isConnected } = useContracts();
   const [rules, setRules] = useState<Rule[]>([]);
   const [executions, setExecutions] = useState<ExecutionLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [nextRuleId, setNextRuleId] = useState<number>(0);
 
-  // Cast contracts to the correct type
   const contracts = rawContracts as Contracts | null;
 
   const fetchRules = async () => {
     if (!contracts) return;
-
     try {
       const id = await contracts.orchestrator.getNextRuleId();
       const ruleId = Number(id);
@@ -92,7 +89,7 @@ export function useOrchestrator() {
           target: rule.target,
           callData: rule.callData,
           active: isActive,
-          createdAt: Number(rule.createdAt)
+          createdAt: Number(rule.createdAt),
         });
       }
       setRules(fetchedRules);
@@ -103,11 +100,10 @@ export function useOrchestrator() {
 
   const fetchExecutions = async () => {
     if (!contracts) return;
-
     try {
       const allExecutions: ExecutionLog[] = [];
       const ruleId = await contracts.orchestrator.getNextRuleId();
-      
+
       for (let i = 0; i < Number(ruleId); i++) {
         const logs = await contracts.orchestrator.getExecutionLogs(i);
         logs.forEach((log) => {
@@ -116,11 +112,10 @@ export function useOrchestrator() {
             timestamp: Number(log.timestamp),
             success: log.success,
             returnData: log.returnData,
-            gasUsed: log.gasUsed
+            gasUsed: log.gasUsed,
           });
         });
       }
-      
       setExecutions(allExecutions.sort((a, b) => b.timestamp - a.timestamp));
     } catch (error) {
       console.error('Error fetching executions:', error);
@@ -135,18 +130,13 @@ export function useOrchestrator() {
     callData: string
   ) => {
     if (!contracts || !isConnected) throw new Error('Not connected');
-
     const signerContracts = contracts.getSignerContracts();
     if (!signerContracts) throw new Error('No signer');
 
     setLoading(true);
     try {
       const tx = await signerContracts.orchestrator.registerRule(
-        source,
-        eventSig,
-        threshold,
-        target,
-        callData
+        source, eventSig, threshold, target, callData
       );
       await tx.wait();
       await fetchRules();
@@ -160,7 +150,6 @@ export function useOrchestrator() {
 
   const deactivateRule = async (ruleId: number) => {
     if (!contracts || !isConnected) throw new Error('Not connected');
-
     const signerContracts = contracts.getSignerContracts();
     if (!signerContracts) throw new Error('No signer');
 
@@ -194,6 +183,6 @@ export function useOrchestrator() {
     refresh: () => {
       fetchRules();
       fetchExecutions();
-    }
+    },
   };
 }

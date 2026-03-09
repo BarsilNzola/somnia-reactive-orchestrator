@@ -10,10 +10,9 @@ export function useContracts() {
 
   const provider = useMemo(() => {
     if (typeof window === 'undefined') return null;
-    return new ethers.BrowserProvider(window.ethereum as any);
+    return new ethers.BrowserProvider((window as any).ethereum);
   }, []);
 
-  // Get signer when provider and address are available
   useEffect(() => {
     const getSigner = async () => {
       if (!provider || !address) {
@@ -28,7 +27,6 @@ export function useContracts() {
         setSigner(null);
       }
     };
-
     getSigner();
   }, [provider, address]);
 
@@ -40,13 +38,11 @@ export function useContracts() {
       abis.liquidityPool,
       provider
     );
-
     const stakingManager = new ethers.Contract(
       contractAddresses.stakingManager,
       abis.stakingManager,
       provider
     );
-
     const orchestrator = new ethers.Contract(
       contractAddresses.orchestrator,
       abis.orchestrator,
@@ -62,9 +58,9 @@ export function useContracts() {
         return {
           liquidityPool: liquidityPool.connect(signer),
           stakingManager: stakingManager.connect(signer),
-          orchestrator: orchestrator.connect(signer)
+          orchestrator: orchestrator.connect(signer),
         };
-      }
+      },
     };
   }, [provider, signer]);
 
@@ -72,6 +68,6 @@ export function useContracts() {
     contracts,
     isConnected,
     address,
-    signer
+    signer,
   };
 }

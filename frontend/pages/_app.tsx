@@ -10,17 +10,16 @@ const somniaTestnet = {
   name: SOMNIA_TESTNET_CONFIG.name,
   nativeCurrency: { name: 'SOM', symbol: 'SOM', decimals: 18 },
   rpcUrls: {
-    default: { http: [SOMNIA_TESTNET_CONFIG.rpcUrl] }
-  }
+    default: { http: [SOMNIA_TESTNET_CONFIG.rpcUrl] },
+  },
 } as const;
 
-// Create config with the latest API
 const config = createConfig({
   chains: [somniaTestnet],
   connectors: [injected()],
   transports: {
-    [somniaTestnet.id]: http()
-  }
+    [somniaTestnet.id]: http(),
+  },
 });
 
 const queryClient = new QueryClient();

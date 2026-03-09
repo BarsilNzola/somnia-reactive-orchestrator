@@ -114,17 +114,14 @@ export default function Dashboard() {
       try {
         await createSoliditySubscription(
           contractAddresses.orchestrator as `0x${string}`,
-          {
-            priorityFeePerGas: 1_000_000_000n,
-            maxFeePerGas: 2_000_000_000n,
-            gasLimit: 500_000n,
-            isGuaranteed: true,
-            isCoalesced: false,
-          }
+          contractAddresses.liquidityPool as `0x${string}`,
+          scenario === 'price_drop'
+            ? 'OraclePriceUpdated(uint256,uint256)'
+            : 'LiquidityUpdated(uint256,uint256)'
         );
         s = setStep(s, 1, 'done');
       } catch {
-        // Subscription may already exist — that's fine
+        // Subscription may already exist — that's fine, continue
         s = setStep(s, 1, 'skipped');
       }
 

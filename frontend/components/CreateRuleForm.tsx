@@ -26,22 +26,22 @@ export default function CreateRuleForm({ onSubmit, loading }: CreateRuleFormProp
   const [success, setSuccess] = useState('');
 
   const THRESHOLD_PRESETS: Record<string, Record<ThresholdPreset, string>> = {
-    '0x1a89285a': { // LiquidityUpdated
+    '0xf1f86f8f': { // LiquidityUpdated — Rule 0 default: 10,000 SOM
       low: (1000n * 10n ** 18n).toString(),
       medium: (10000n * 10n ** 18n).toString(),
       high: (100000n * 10n ** 18n).toString(),
       custom: ''
     },
-    '0x895c0188': { // APYUpdated
+    '0x787a1fca': { // APYUpdated — Rule 2 default: 300 bps
       low: '100',
-      medium: '500',
+      medium: '300',
       high: '1000',
       custom: ''
     },
-    '0x37542106': { // OraclePriceUpdated
-      low: (100n * 10n ** 18n).toString(),
-      medium: (1000n * 10n ** 18n).toString(),
-      high: (10000n * 10n ** 18n).toString(),
+    '0x7bb53a16': { // OraclePriceUpdated — Rule 1 default: 80 SOM
+      low: (14n * 10n ** 18n).toString(),
+      medium: (80n * 10n ** 18n).toString(),
+      high: (200n * 10n ** 18n).toString(),
       custom: ''
     }
   };
@@ -62,7 +62,7 @@ export default function CreateRuleForm({ onSubmit, loading }: CreateRuleFormProp
     if (thresholdPreset === 'custom') return customThreshold;
     const preset = THRESHOLD_PRESETS[eventSig]?.[thresholdPreset];
     if (!preset) return '0';
-    if (eventSig === '0x1a89285a' || eventSig === '0x37542106') {
+    if (eventSig === '0xf1f86f8f' || eventSig === '0x7bb53a16') {
       return `${(BigInt(preset) / 10n ** 18n).toString()} SOM`;
     }
     return preset;

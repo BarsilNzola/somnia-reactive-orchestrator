@@ -1,22 +1,16 @@
 export const SOMNIA_TESTNET_CONFIG = {
   chainId: 50312,
-  name: "Somnia Testnet",
-  rpcUrl: "https://testnet.rpc.somnia.network",
-  explorerUrl: "https://testnet.explorer.somnia.network"
-} as const;
+  name: 'Somnia Testnet',
+  rpcUrl: 'https://testnet.rpc.somnia.network',
+  blockExplorer: 'https://testnet.explorer.somnia.network',
+  wsUrl: 'wss://testnet.rpc.somnia.network/ws',
+};
 
-// Event signatures (keccak256 first 4 bytes)
+// Event signatures — verified from deployment output
 export const EVENT_SIGNATURES: Record<string, string> = {
-  '0x1a89285a': 'LiquidityUpdated',
-  '0x895c0188': 'APYUpdated',
-  '0x37542106': 'OraclePriceUpdated',
-  '0xd187fca4': 'StakingPaused',
-  '0xdcc519d6': 'StakingResumed',
-  '0x9b99be9d': 'RewardRateUpdated',
-  '0x8f0023b1': 'StrategyRebalanced',
-  '0x018a853a': 'RuleRegistered',
-  '0xb4fe175c': 'RuleDeactivated',
-  '0x8491a7b2': 'RuleExecuted',
+  '0xf1f86f8f': 'LiquidityUpdated',   // Rule 0
+  '0x7bb53a16': 'OraclePriceUpdated', // Rule 1
+  '0x787a1fca': 'APYUpdated',         // Rule 2
 };
 
 // Rule type options for the Create Rule form
@@ -42,25 +36,13 @@ export const ACTIONS = [
 ] as const;
 
 export const AVAILABLE_EVENTS = [
-  { sig: '0x1a89285a', name: 'LiquidityUpdated', description: 'Fires when pool liquidity changes' },
-  { sig: '0x895c0188', name: 'APYUpdated', description: 'Fires when APY is updated' },
-  { sig: '0x37542106', name: 'OraclePriceUpdated', description: 'Fires when oracle price changes' },
+  { sig: '0xf1f86f8f', name: 'LiquidityUpdated',   description: 'Fires when pool liquidity changes — Rule 0: threshold 10,000 SOM' },
+  { sig: '0x7bb53a16', name: 'OraclePriceUpdated',  description: 'Fires when oracle price changes — Rule 1: threshold 80 SOM' },
+  { sig: '0x787a1fca', name: 'APYUpdated',          description: 'Fires when APY is updated — Rule 2: threshold 300 bps' },
 ];
 
 export const AVAILABLE_ACTIONS = [
-  {
-    name: 'Pause Staking',
-    callData: '0x6eedf33f', // pauseStaking()
-    description: 'Pauses all staking operations',
-  },
-  {
-    name: 'Resume Staking',
-    callData: '0x3cd86b3a', // resumeStaking()
-    description: 'Resumes staking operations',
-  },
-  {
-    name: 'Rebalance Strategy',
-    callData: '0x2aba0f48', // rebalanceStrategy()
-    description: 'Triggers a strategy rebalance',
-  },
+  { name: 'Pause Staking',      callData: '0x6eedf33f', description: 'Pauses all staking operations' },
+  { name: 'Resume Staking',     callData: '0x3cd86b3a', description: 'Resumes staking operations' },
+  { name: 'Rebalance Strategy', callData: '0x2aba0f48', description: 'Triggers a strategy rebalance' },
 ];

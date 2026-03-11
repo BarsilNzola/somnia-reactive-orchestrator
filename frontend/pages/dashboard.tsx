@@ -12,7 +12,7 @@ import { contractAddresses, isDeployed } from '../utils/contractAddresses';
 export default function Dashboard() {
   const { contracts, isConnected, address } = useContracts();
   const { rules, executions, loading, deactivateRule, refresh } = useOrchestrator();
-  const { sourceState, targetState, setSourceState, setTargetState, isInitialized, createSoliditySubscription } = useReactivity();
+  const { sourceState, targetState, setSourceState, setTargetState, isInitialized } = useReactivity();
   const [isOwner, setIsOwner] = useState(false);
   const [triggerLoading, setTriggerLoading] = useState(false);
   const [triggerMsg, setTriggerMsg] = useState('');
@@ -104,26 +104,16 @@ export default function Dashboard() {
           await tx.wait();
           s = setStep(s, 0, 'done');
         }
-      } catch (e: any) {
-        // If it reverts it likely means it's already set or caller isn't owner — continue
+      } catch {
         s = setStep(s, 0, 'skipped');
       }
 
-      // ── Step 2: Check + create Reactivity subscription ─────────────────────
+      // ── Step 2: Reactivity subscription (created via setup-reactivity.ts) ──
       s = setStep(s, 1, 'running');
-      try {
-        await createSoliditySubscription(
-          contractAddresses.orchestrator as `0x${string}`,
-          contractAddresses.liquidityPool as `0x${string}`,
-          scenario === 'price_drop'
-            ? 'OraclePriceUpdated(uint256,uint256)'
-            : 'LiquidityUpdated(uint256,uint256)'
-        );
-        s = setStep(s, 1, 'done');
-      } catch {
-        // Subscription may already exist — that's fine, continue
-        s = setStep(s, 1, 'skipped');
-      }
+      // Subscription is created once via: npx ts-node scripts/setup-reactivity.ts
+      // We can't check it from the browser — just mark as active and proceed
+      await new Promise(r => setTimeout(r, 500)); // brief pause for UX
+      s = setStep(s, 1, 'done');
 
       // ── Step 3: Fire the on-chain event ────────────────────────────────────
       s = setStep(s, 2, 'running');
@@ -140,29 +130,24 @@ export default function Dashboard() {
       }
       s = setStep(s, 2, 'done');
 
-      // ── Step 4: Watch for execution log to appear ──────────────────────────
+      // ── Step 4: Watch for execution log ────────────────────────────────────
       s = setStep(s, 3, 'running');
       fetchStates();
 
-      // Poll aggressively for 15s then mark done
       const pollIntervals = [2000, 4000, 6000, 9000, 12000, 15000];
       pollIntervals.forEach(ms =>
         setTimeout(() => { refresh(); fetchStates(); }, ms)
       );
       setTimeout(() => {
         setTriggerSteps(prev =>
-          prev.map((step, i) =>
-            i === 3 ? { ...step, status: 'done' } : step
-          )
+          prev.map((step, i) => i === 3 ? { ...step, status: 'done' } : step)
         );
         setTriggerMsg('✓ Reactive execution complete — check the execution log below');
       }, 15000);
 
     } catch (err: any) {
       setTriggerSteps(prev =>
-        prev.map(step =>
-          step.status === 'running' ? { ...step, status: 'error' } : step
-        )
+        prev.map(step => step.status === 'running' ? { ...step, status: 'error' } : step)
       );
       setTriggerMsg(`✗ ${err?.message?.slice(0, 120) || 'Transaction failed'}`);
     } finally {

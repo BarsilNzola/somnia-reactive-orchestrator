@@ -1,7 +1,7 @@
 export const SOMNIA_TESTNET_CONFIG = {
   chainId: 50312,
   name: 'Somnia Testnet',
-  rpcUrl: 'https://testnet.rpc.somnia.network',
+  rpcUrl: 'https://dream-rpc.somnia.network',
   blockExplorer: 'https://testnet.explorer.somnia.network',
   wsUrl: 'wss://testnet.rpc.somnia.network/ws',
 };

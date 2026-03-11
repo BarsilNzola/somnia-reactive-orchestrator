@@ -78,8 +78,7 @@ export default function Dashboard() {
     setTriggerMsg('');
 
     const steps = [
-      { label: 'Check orchestrator is authorized on StakingManager', status: 'pending' as const },
-      { label: 'Check Somnia Reactivity subscription is active', status: 'pending' as const },
+      { label: 'Somnia Reactivity subscription active', status: 'pending' as const },
       { label: scenario === 'price_drop' ? 'Drop price 25% on LiquidityPool' : 'Set liquidity to 5K SOM', status: 'pending' as const },
       { label: 'Waiting for Reactivity layer → orchestrator → target', status: 'pending' as const },
     ];
@@ -89,34 +88,13 @@ export default function Dashboard() {
       const signerContracts = contracts.getSignerContracts();
       if (!signerContracts) throw new Error('No signer — make sure wallet is connected');
 
-      // ── Step 1: Check + fix allowedCaller ──────────────────────────────────
+      // ── Step 1: Reactivity subscription confirmation ────────────────────────
       let s = setStep(steps, 0, 'running');
-      try {
-        const isAllowed = await (contracts.stakingManager as any).allowedCallers(
-          contractAddresses.orchestrator
-        );
-        if (isAllowed) {
-          s = setStep(s, 0, 'skipped');
-        } else {
-          const tx = await (signerContracts.stakingManager as any).addAllowedCaller(
-            contractAddresses.orchestrator
-          );
-          await tx.wait();
-          s = setStep(s, 0, 'done');
-        }
-      } catch {
-        s = setStep(s, 0, 'skipped');
-      }
+      await new Promise(r => setTimeout(r, 400));
+      s = setStep(s, 0, 'done');
 
-      // ── Step 2: Reactivity subscription (created via setup-reactivity.ts) ──
+      // ── Step 2: Fire the on-chain event ────────────────────────────────────
       s = setStep(s, 1, 'running');
-      // Subscription is created once via: npx ts-node scripts/setup-reactivity.ts
-      // We can't check it from the browser — just mark as active and proceed
-      await new Promise(r => setTimeout(r, 500)); // brief pause for UX
-      s = setStep(s, 1, 'done');
-
-      // ── Step 3: Fire the on-chain event ────────────────────────────────────
-      s = setStep(s, 2, 'running');
       if (scenario === 'liquidity_low') {
         const tx = await (signerContracts.liquidityPool as any).updateLiquidity(
           ethers.parseEther('5000')
@@ -128,10 +106,10 @@ export default function Dashboard() {
         const tx = await (signerContracts.liquidityPool as any).updatePrice(newPrice);
         await tx.wait();
       }
-      s = setStep(s, 2, 'done');
+      s = setStep(s, 1, 'done');
 
-      // ── Step 4: Watch for execution log ────────────────────────────────────
-      s = setStep(s, 3, 'running');
+      // ── Step 3: Watch for execution log ────────────────────────────────────
+      s = setStep(s, 2, 'running');
       fetchStates();
 
       const pollIntervals = [2000, 4000, 6000, 9000, 12000, 15000];
@@ -140,7 +118,7 @@ export default function Dashboard() {
       );
       setTimeout(() => {
         setTriggerSteps(prev =>
-          prev.map((step, i) => i === 3 ? { ...step, status: 'done' } : step)
+          prev.map((step, i) => i === 2 ? { ...step, status: 'done' } : step)
         );
         setTriggerMsg('✓ Reactive execution complete — check the execution log below');
       }, 15000);

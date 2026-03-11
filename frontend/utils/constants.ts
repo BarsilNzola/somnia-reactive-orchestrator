@@ -42,7 +42,7 @@ export const AVAILABLE_EVENTS = [
 ];
 
 export const AVAILABLE_ACTIONS = [
-  { name: 'Pause Staking',      callData: '0x6eedf33f', description: 'Pauses all staking operations' },
-  { name: 'Resume Staking',     callData: '0x3cd86b3a', description: 'Resumes staking operations' },
-  { name: 'Rebalance Strategy', callData: '0x2aba0f48', description: 'Triggers a strategy rebalance' },
+  { name: 'Pause Staking',      callData: '0xf999c506', description: 'Pauses all staking operations' },
+  { name: 'Resume Staking',     callData: '0x7475f913', description: 'Resumes staking operations' },
+  { name: 'Rebalance Strategy', callData: '0xdb7a3ea3', description: 'Triggers a strategy rebalance' },
 ];

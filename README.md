@@ -1,312 +1,237 @@
-Somnia Reactive Orchestrator (SRO)
-==================================
+# Somnia Reactive Orchestrator (SRO)
 
-On-Chain Automation Engine Powered by Somnia Native Reactivity
---------------------------------------------------------------
+> Somnia Reactivity Mini Hackathon 2026
 
-📋 Overview
------------
+A modular, on-chain automation engine that enables trustless, event-driven communication between smart contracts — without any off-chain infrastructure. Built entirely on Somnia Native Reactivity.
 
-The Somnia Reactive Orchestrator is a modular, on-chain automation engine that enables trustless, event-driven communication between smart contracts without any off-chain infrastructure. It leverages Somnia's native reactivity to create an "if-this-then-that" (IFTTT) system for the blockchain.
+---
 
-### Key Features
+## What It Does
 
--   **Event-Driven Automation**: Subscribe to events from any contract and automatically trigger actions
+SRO is a composable "if-this-then-that" engine for smart contracts. It subscribes to events from a source contract, evaluates conditions on-chain, and automatically triggers actions on a target contract. No polling. No off-chain bots. No centralized servers.
 
--   **No Off-Chain Infrastructure**: No polling, no bots, no centralized servers
+---
 
--   **Rule-Based Engine**: Create custom rules with thresholds and conditions
+## How Somnia Reactivity Is Used
 
--   **Real-Time Frontend Updates**: Instant UI updates via Somnia Reactivity SDK
+### On-Chain (Solidity)
 
--   **Execution Logging**: Full on-chain history of all automated actions
+`ReactiveOrchestrator` inherits from `SomniaEventHandler` and overrides `onEvent` to process subscription callbacks:
 
--   **Composable Architecture**: Any contract can be a source or target
+```solidity
+function onEvent(
+    address emitter,
+    bytes32[] calldata eventTopics,
+    bytes calldata data
+) external override {
+    _onEvent(emitter, eventTopics, data);
+}
 
-🏗 Architecture
----------------
+function _onEvent(
+    address emitter,
+    bytes32[] calldata eventTopics,
+    bytes calldata data
+) internal override {
+    // Iterate rules, check thresholds, execute target calls
+}
+```
 
-text
+When an event fires on-chain, the Somnia Reactivity precompile calls `onEvent` directly on the orchestrator — deterministic, trustless, and instant.
 
-[Source Contract]
- │
- ▼ (emits event)
-[Somnia Reactivity Layer]
- │
- ▼ (native subscription)
-[Reactive Orchestrator]
- │
- ▼ (evaluates rules)
-[Target Contract]
- │
- ▼ (state change)
-[Frontend UI] (instant updates)
+> **Implementation note:** The base `SomniaEventHandler` restricts `onEvent` callers to the precompile address `0x0000000000000000000000000000000000000100`. On the current Somnia testnet, the precompile calls from a different context, so we override `onEvent` directly to ensure compatibility while preserving full reactive functionality.
 
-### Core Components
+### Subscriptions (TypeScript SDK)
 
-1.  **Source Contract**: Emits observable events (e.g., LiquidityPool)
+Reactivity subscriptions are created once via `setup-reactivity.ts` using the `@somnia-chain/reactivity` SDK:
 
-2.  **Reactive Orchestrator**: Core engine that manages rules and triggers actions
+```typescript
+const txHash = await sdk.createSoliditySubscription({
+  handlerContractAddress: orchestratorAddress,
+  emitter: liquidityPoolAddress,
+  eventTopics: [keccak256(toBytes('OraclePriceUpdated(uint256,uint256)'))],
+  priorityFeePerGas: parseGwei('2'),
+  maxFeePerGas: parseGwei('10'),
+  gasLimit: 2_000_000n,
+  isGuaranteed: true,
+  isCoalesced: false,
+});
+```
 
-3.  **Target Contract**: Executes automated actions (e.g., StakingManager)
+---
 
-4.  **Frontend Dashboard**: Real-time monitoring and rule management
+## Architecture
 
-🚀 Demo Scenario
-----------------
+```
+[LiquidityPool.sol]           Source contract — emits events
+        |
+        v  (event emitted)
+[Somnia Reactivity Layer]     Native on-chain, no polling
+        |
+        v  (precompile callback)
+[ReactiveOrchestrator.sol]    Evaluates registered rules
+        |
+        v  (low-level call)
+[StakingManager.sol]          Target contract — executes action
+        |
+        v
+[Next.js Frontend]            Real-time updates via Reactivity SDK
+```
 
-### Liquidity Risk Guardian
+### Architecture Patterns
+
+- **On-chain Observer Pattern** — contracts subscribe to each other's events
+- **Event-driven state propagation** — state changes cascade trustlessly
+- **Deterministic automation layer** — rule execution is reproducible and verifiable on-chain
+- **Smart contract orchestration primitive** — composable building block for any dApp
+
+---
+
+## Demo Scenarios
+
+### Scenario 1: LP Risk Guardian
 
 When liquidity drops below 10,000 SOM:
 
-1.  LiquidityPool emits `LiquidityUpdated` event
+1. `LiquidityPool` emits `LiquidityUpdated` event
+2. Somnia Reactivity calls `onEvent` on the orchestrator
+3. Orchestrator evaluates rules and calls `pauseStaking()` on `StakingManager`
+4. Frontend execution log updates instantly
 
-2.  Orchestrator detects event and evaluates rules
+### Scenario 2: Oracle Rebalancer
 
-3.  Automatically calls `pauseStaking()` on StakingManager
+When oracle price drops below threshold:
 
-4.  Frontend updates instantly: "⚠ Staking paused due to liquidity risk"
+1. `LiquidityPool` emits `OraclePriceUpdated` event
+2. Orchestrator calls `rebalanceStrategy()` on `StakingManager`
+3. Execution log shows rule ID, timestamp, gas used, and success status
 
-### Oracle Rebalance
+---
 
-When price drops 20%:
+## Deployed Contracts (Somnia Testnet — Chain ID: 50312)
 
-1.  Oracle price update event triggers
+| Contract | Address | Explorer |
+|---|---|---|
+| LiquidityPool | `0x6B0E391571c6144F7486e6fAdFA3450ad5132dC7` | [View](https://testnet.explorer.somnia.network/address/0x6B0E391571c6144F7486e6fAdFA3450ad5132dC7) |
+| StakingManager | `0xc6E7bfD16F4e7a3830B02D0DAfD3FA5145Bd3fA1` | [View](https://testnet.explorer.somnia.network/address/0xc6E7bfD16F4e7a3830B02D0DAfD3FA5145Bd3fA1) |
+| ReactiveOrchestrator | `0xb6229de9121d4ed8dF075B534DBCA8FB946A40B4` | [View](https://testnet.explorer.somnia.network/address/0xb6229de9121d4ed8dF075B534DBCA8FB946A40B4) |
 
-2.  Orchestrator calls `rebalanceStrategy()`
+**Network**
+- RPC: `https://dream-rpc.somnia.network`
+- Explorer: `https://testnet.explorer.somnia.network`
+- Currency: STT
 
-3.  Frontend shows execution log with timestamp and gas used
+---
 
-🛠 Technology Stack
--------------------
+## Smart Contracts
 
-### Smart Contracts
+| Contract | Description |
+|---|---|
+| `LiquidityPool.sol` | Source contract — emits `LiquidityUpdated`, `APYUpdated`, `OraclePriceUpdated` |
+| `StakingManager.sol` | Target contract — exposes `pauseStaking`, `resumeStaking`, `rebalanceStrategy` |
+| `ReactiveOrchestrator.sol` | Core engine — registers rules, handles Reactivity callbacks, executes targets |
 
--   **Solidity** ^0.8.19
+---
 
--   **Somnia Reactivity Contracts** - Native event handling
-
--   **Hardhat** - Development environment
-
--   **TypeChain** - Type-safe contract interactions
-
-### Frontend
-
--   **Next.js 14** - React framework
-
--   **TypeScript** - Type safety
-
--   **Wagmi** - Ethereum wallet integration
-
--   **Viem** - Low-level Ethereum interaction
-
--   **Somnia Reactivity SDK** - Real-time subscriptions
-
--   **TailwindCSS** - Styling
-
-📦 Installation
----------------
+## Setup
 
 ### Prerequisites
 
--   Node.js v18+
+- Node.js v18+
+- MetaMask connected to Somnia Testnet (Chain ID: 50312)
+- 32+ STT to fund Reactivity subscriptions
 
--   npm or yarn
+### 1. Deploy Contracts
 
--   MetaMask wallet
-
--   Somnia Testnet access
-
-### Clone the Repository
-
-bash
-
-git clone https://github.com/BarsilNzola/somnia-reactive-orchestrator.git
-cd somnia-reactive-orchestrator
-
-### Smart Contracts Setup
-
-bash
-
+```bash
 cd contracts
 npm install
 cp .env.example .env
-# Add your private key and RPC URLs to .env
+# Add PRIVATE_KEY to .env (without 0x prefix)
 
-# Compile contracts
 npm run compile
-
-# Run tests
-npm run test
-
-# Deploy to Somnia Testnet
 npm run deploy:testnet
+# Note the deployed addresses from the output
+```
 
-### Frontend Setup
+### 2. Create Reactivity Subscriptions
 
-bash
+Run once after deployment to wire the Reactivity layer:
 
+```bash
+npx hardhat run scripts/setup-reactivity.ts --network somniaTestnet
+```
+
+### 3. Run Frontend
+
+```bash
 cd frontend
 npm install
-cp .env.example .env.local
-# Add your contract addresses to .env.local
+cp .env.local.example .env.local
+# Add deployed contract addresses to .env.local
 
-# Copy ABIs from contracts
-npm run copy-abis
-
-# Build and run
-npm run build
 npm run dev
+```
 
-📁 Project Structure
---------------------
+### 4. Use the Dashboard
 
-text
+- Connect MetaMask to Somnia Testnet
+- Go to `/create-rule` to register automation rules
+- Use the Live Demo Triggers panel (owner only) to fire test events
+- Watch the execution log populate in real time
 
+---
+
+## Project Structure
+
+```
 somnia-reactive-orchestrator/
-├── contracts/                    # Smart contracts
-│   ├── contracts/
-│   │   ├── interfaces/           # Contract interfaces
-│   │   ├── orchestrator/         # ReactiveOrchestrator.sol
-│   │   ├── sources/               # LiquidityPool.sol
-│   │   └── targets/               # StakingManager.sol
-│   ├── scripts/                   # Deployment scripts
-│   ├── test/                      # Test files
-│   └── hardhat.config.ts          # Hardhat configuration
-│
-├── frontend/                      # Next.js frontend
-│   ├── pages/                      # Next.js pages
-│   ├── components/                  # React components
-│   ├── hooks/                       # Custom React hooks
-│   ├── utils/                       # Utilities and constants
-│   ├── abis/                        # Contract ABIs (copied)
-│   └── public/                      # Static assets
-│
-├── deployment.json                  # Deployed contract addresses
-└── README.md                        # This file
+├── contracts/
+│   ├── LiquidityPool.sol
+│   ├── StakingManager.sol
+│   ├── ReactiveOrchestrator.sol
+│   ├── interfaces/
+│   │   ├── ISource.sol
+│   │   ├── ITarget.sol
+│   │   └── IReactiveOrchestrator.sol
+│   └── scripts/
+│       ├── deploy-orchestrator.ts
+│       ├── setup-reactivity.ts
+│       ├── register-rule.ts
+│       └── debug-onevent.ts
+└── frontend/
+    ├── pages/
+    │   ├── index.tsx
+    │   ├── dashboard.tsx
+    │   └── create-rule.tsx
+    ├── components/
+    ├── hooks/
+    │   ├── useContracts.ts
+    │   ├── useOrchestrator.ts
+    │   └── useReactivity.ts
+    └── utils/
+```
 
-💡 Usage
---------
+---
 
-### 1\. Connect Wallet
+## Future Enhancements
 
--   Ensure MetaMask is connected to Somnia Testnet (Chain ID: 50342)
+- Percentage-based rules (e.g., price drops by 20%)
+- Time-based / cron rules
+- Multi-condition rules (AND/OR logic)
+- Rule templates for common DeFi scenarios
+- Analytics dashboard with charts
+- Cross-chain automation via Somnia interoperability
 
--   Get test SOM tokens from the faucet
+---
 
-### 2\. Create a Rule
+## Technology Stack
 
-Navigate to `/create-rule` and fill in:
+**Smart Contracts:** Solidity 0.8.30, Hardhat, Somnia Reactivity Contracts
 
--   **Source Event**: Select from available events (LiquidityUpdated, APYUpdated, OraclePriceUpdated)
+**Frontend:** Next.js 14, TypeScript, Viem, Ethers.js, Somnia Reactivity SDK, TailwindCSS
 
--   **Threshold Value**: Set the condition (e.g., 10,000 SOM for liquidity)
+---
 
--   **Target Action**: Choose what to trigger (pauseStaking, rebalanceStrategy, etc.)
+## License
 
--   **Action Parameters**: Provide any required parameters
-
-### 3\. Monitor Dashboard
-
-The dashboard shows:
-
--   **Contract States**: Real-time values from source and target contracts
-
--   **Active Rules**: List of all registered rules with their status
-
--   **Execution History**: Log of all automated actions with success/failure status
-
-### 4\. Deactivate Rules
-
--   Toggle rules on/off from the dashboard
-
--   Deactivated rules won't trigger even if conditions are met
-
-🧪 Testing
-----------
-
-bash
-
-cd contracts
-npm run test          # Run all tests
-npm run test:gas      # Run tests with gas reporting
-npm run coverage      # Generate test coverage report
-
-🌐 Network Configuration
-------------------------
-
-### Somnia Testnet
-
--   **Chain ID**: 50342
-
--   **RPC URL**: <https://testnet.rpc.somnia.network>
-
--   **Explorer**: <https://testnet.explorer.somnia.network>
-
--   **Currency**: SOM
-
-📊 Architecture Pattern
------------------------
-
-The Somnia Reactive Orchestrator implements:
-
--   **On-chain Observer Pattern**: Contracts observe and react to events
-
--   **Event-driven State Propagation**: State changes propagate through events
-
--   **Deterministic Automation Layer**: Rules execute predictably
-
--   **Smart Contract Orchestration Primitive**: Reusable automation building block
-
-🏆 Why This Matters
--------------------
-
-> "Somnia Data Streams introduces new RPCs built for high-performance reading and writing, allowing applications to subscribe to live blockchain data and receive automatic updates as state changes occur. This marks a shift from static, indexer-driven blockchain interaction to a dynamic, event-driven model."
-
-Your orchestrator demonstrates:
-
--   **Real-time reactivity** without polling or off-chain infrastructure
-
--   **Trustless automation** guaranteed by the network
-
--   **Composable primitives** that any contract can use
-
--   **Deterministic execution** for reliable automation
-
-🔮 Future Enhancements
-----------------------
-
--   Percentage-based rules (e.g., price drops by 20%)
-
--   Time-based rules (e.g., execute every 24 hours)
-
--   Multi-condition rules (AND/OR logic)
-
--   Rule templates for common scenarios
-
--   Analytics dashboard with charts
-
--   Email/SMS notifications
-
--   Cross-chain automation (via Somnia's interoperability)
-
-🤝 Contributing
----------------
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-📄 License
-----------
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-🙏 Acknowledgments
-------------------
-
--   [Somnia](https://somnia.network/) for their native reactivity technology
-
--   [Hardhat](https://hardhat.org/) for the development environment
-
--   [Next.js](https://nextjs.org/) for the frontend framework
-
--   [Wagmi](https://wagmi.sh/) for React hooks for Ethereum
+MIT

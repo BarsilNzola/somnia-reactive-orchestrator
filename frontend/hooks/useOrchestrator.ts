@@ -167,10 +167,16 @@ export function useOrchestrator() {
   };
 
   useEffect(() => {
-    if (contracts) {
-      fetchRules();
+    if (!contracts) return;
+    fetchRules();
+    fetchExecutions();
+
+    const interval = setInterval(() => {
       fetchExecutions();
-    }
+      fetchRules();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, [contracts]);
 
   return {

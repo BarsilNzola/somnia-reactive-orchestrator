@@ -23,8 +23,8 @@ import { SDK } from '@somnia-chain/reactivity';
 import { privateKeyToAccount } from 'viem/accounts';
 import { createPublicClient, createWalletClient, http, keccak256, toBytes, parseGwei, defineChain } from 'viem';
 
-const LIQUIDITY_POOL = '0x3A8560Ce1d70df2432FF66EAA7dC604Ec28fdD46';
-const ORCHESTRATOR   = '0x089b4dFA56e2333a3713B1307097424799ceE9ac';
+const LIQUIDITY_POOL = '0x6B0E391571c6144F7486e6fAdFA3450ad5132dC7';
+const ORCHESTRATOR   = '0xb6229de9121d4ed8dF075B534DBCA8FB946A40B4';
 const RPC_URL        = 'https://dream-rpc.somnia.network';
 
 const somniaTestnet = defineChain({
@@ -85,7 +85,7 @@ async function main() {
       eventTopics: [eventTopic],
       priorityFeePerGas: parseGwei('2'),
       maxFeePerGas: parseGwei('10'),
-      gasLimit: 500_000n,
+      gasLimit: 2_000_000n,
       isGuaranteed: true,
       isCoalesced: false,
     });

@@ -93,6 +93,7 @@ export interface ReactiveOrchestratorInterface extends Interface {
 
   getEvent(
     nameOrSignatureOrTopic:
+      | "DebugCalled"
       | "RuleDeactivated"
       | "RuleExecuted"
       | "RuleFailed"
@@ -176,6 +177,31 @@ export interface ReactiveOrchestratorInterface extends Interface {
     functionFragment: "testTriggerEvent",
     data: BytesLike
   ): Result;
+}
+
+export namespace DebugCalledEvent {
+  export type InputTuple = [
+    caller: AddressLike,
+    emitter: AddressLike,
+    topicsLen: BigNumberish,
+    gasLeft: BigNumberish
+  ];
+  export type OutputTuple = [
+    caller: string,
+    emitter: string,
+    topicsLen: bigint,
+    gasLeft: bigint
+  ];
+  export interface OutputObject {
+    caller: string;
+    emitter: string;
+    topicsLen: bigint;
+    gasLeft: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
 }
 
 export namespace RuleDeactivatedEvent {
@@ -415,6 +441,13 @@ export interface ReactiveOrchestrator extends BaseContract {
   >;
 
   getEvent(
+    key: "DebugCalled"
+  ): TypedContractEvent<
+    DebugCalledEvent.InputTuple,
+    DebugCalledEvent.OutputTuple,
+    DebugCalledEvent.OutputObject
+  >;
+  getEvent(
     key: "RuleDeactivated"
   ): TypedContractEvent<
     RuleDeactivatedEvent.InputTuple,
@@ -444,6 +477,17 @@ export interface ReactiveOrchestrator extends BaseContract {
   >;
 
   filters: {
+    "DebugCalled(address,address,uint256,uint256)": TypedContractEvent<
+      DebugCalledEvent.InputTuple,
+      DebugCalledEvent.OutputTuple,
+      DebugCalledEvent.OutputObject
+    >;
+    DebugCalled: TypedContractEvent<
+      DebugCalledEvent.InputTuple,
+      DebugCalledEvent.OutputTuple,
+      DebugCalledEvent.OutputObject
+    >;
+
     "RuleDeactivated(uint256)": TypedContractEvent<
       RuleDeactivatedEvent.InputTuple,
       RuleDeactivatedEvent.OutputTuple,

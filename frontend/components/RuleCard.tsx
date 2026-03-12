@@ -28,7 +28,7 @@ export default function RuleCard({ rule, onDeactivate, executionCount = 0 }: Rul
 
   const formatThreshold = (threshold: bigint, eventSig: string) => {
     const normalized = eventSig.toLowerCase().slice(0, 10);
-    if (normalized === '0x895c0188') { // APYUpdated
+    if (normalized === '0x787a1fca') { // APYUpdated
       return `${threshold.toString()} bps`;
     }
     try {
@@ -63,6 +63,11 @@ export default function RuleCard({ rule, onDeactivate, executionCount = 0 }: Rul
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {executionCount > 0 && (
+            <span className="text-xs px-2 py-1 rounded-full font-medium mono bg-[rgba(0,255,157,0.08)] text-[var(--accent-green)] border border-[rgba(0,255,157,0.2)]">
+              ✓ EXECUTED
+            </span>
+          )}
           <span className={`text-xs px-2 py-1 rounded-full font-medium mono ${
             rule.active ? 'badge-active' : 'badge-inactive'
           }`}>
